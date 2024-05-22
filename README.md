@@ -6,6 +6,8 @@ URL Shortening System
 ## Description
 The URL Shortening System is a service that allows users to shorten long URLs, making them easier to share and manage. It utilizes a REST API for client interaction and processes requests through a centralized service logic.
 
+## Archicteture
+![url-shortening-system-img](https://raw.githubusercontent.com/luigivis/url-shortening-system/main/arch-short-url.jpeg)
 ## Main Components
 
 1. **REST API**: Interface for clients to send and receive data.
