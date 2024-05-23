@@ -7,7 +7,6 @@
 		<artifactId>parent</artifactId>
 		<version>0.1</version>
 	</parent>
-	<groupId>com.luigivis</groupId>
 	<artifactId>core-service</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>core-service</name>
@@ -16,9 +15,6 @@
 	<properties>
 		<java.version>21</java.version>
 	</properties>
-
-	<dependencies>
-	</dependencies>
 
 	<build>
 		<plugins>

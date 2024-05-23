@@ -1,30 +1,49 @@
 package com.luigivis.coreservice.service.impl;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.luigivis.coreservice.service.MetricsService;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpMethod;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import static org.springframework.http.HttpMethod.POST;
+
 @Slf4j
 @Service
-public class MetricsResponseDto implements MetricsService {
+public class MetricsServiceImpl implements MetricsService {
 
-  @Autowired private ObjectMapper mapper;
+  private final ObjectMapper mapper;
 
-  @Async
+  public MetricsServiceImpl(ObjectMapper mapper) {
+    this.mapper = mapper;
+  }
+
+  @Async("processExecutor")
   @Override
-  public void sendToKafka(ServletRequest request, ServletResponse response) throws JsonProcessingException {
+  public void sendToKafka(ServletRequest request, ServletResponse response) throws IOException {
     log.info("Sending to kafka");
     var httpRequest = (HttpServletRequest) request;
 
+    switch (HttpMethod.valueOf(httpRequest.getMethod()).name()) {
+      case "POST", "DELETE", "PUT" -> {
+        log.info("Canceling send to kafka POST invocation");
+        return;
+      }
+    }
+
+    var shortenUrl = httpRequest.getRequestURI().replaceAll("/api/v1/shorten/", "");
+
+    // log.info("Body {}", new JSONParser(httpRequest.getReader()).parse());
+    log.info("shortenUrl {}", shortenUrl);
+    log.info("Ip {}", httpRequest.getRemoteAddr());
+    log.info("Host {}", httpRequest.getRemoteHost());
     log.info("params {}", mapper.writeValueAsString(getParams(httpRequest)));
     log.info("headers {}", mapper.writeValueAsString(getHeaders(httpRequest)));
   }
