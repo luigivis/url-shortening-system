@@ -1,23 +1,19 @@
 package com.luigivis.coreservice.controller;
 
+import static com.luigivis.coreservice.dto.generic.GenericResponse.GenerateHttpResponse;
+
 import com.luigivis.coreservice.dto.generic.GenericResponse;
 import com.luigivis.coreservice.dto.request.UrlCreateRequestDto;
 import com.luigivis.coreservice.dto.response.UrlCreateResponseDto;
 import com.luigivis.coreservice.dto.response.UrlFindResponseDto;
 import com.luigivis.coreservice.entity.ShortenUrlEntity;
 import com.luigivis.coreservice.service.impl.ShortenUrlServiceImpl;
+import java.net.URI;
+import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.ModelAndView;
-import org.springframework.web.servlet.view.RedirectView;
-
-import java.net.URI;
-import java.util.UUID;
-
-import static com.luigivis.coreservice.dto.generic.GenericResponse.GenerateHttpResponse;
 
 @RestController
 @RequestMapping("api/v1/shorten/")
@@ -51,8 +47,10 @@ public class ShortenUrlController {
   }
 
   @GetMapping("/{shortUrl}")
-  public ResponseEntity<Void> redirectOriginalUrl(@PathVariable String shortUrl) {
+  public ResponseEntity<GenericResponse<UrlFindResponseDto>> redirectOriginalUrl(
+      @PathVariable String shortUrl) {
     var response = service.findOriginalUrl(shortUrl);
+    if (response.getData() == null) return GenerateHttpResponse(response);
     return ResponseEntity.status(HttpStatus.FOUND)
         .location(URI.create(response.getData().originalUrl()))
         .build();

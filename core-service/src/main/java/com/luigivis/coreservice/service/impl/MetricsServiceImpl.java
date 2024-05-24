@@ -1,28 +1,34 @@
 package com.luigivis.coreservice.service.impl;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.luigivis.coreservice.dto.response.MetricsResponseDto;
 import com.luigivis.coreservice.service.MetricsService;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
+
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpMethod;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-
-import static org.springframework.http.HttpMethod.POST;
 
 @Slf4j
 @Service
 public class MetricsServiceImpl implements MetricsService {
 
-  private final ObjectMapper mapper;
+  @Value("${kafka.metrics.topic}")
+  private String topic;
 
-  public MetricsServiceImpl(ObjectMapper mapper) {
-    this.mapper = mapper;
+  private final KafkaTemplate<String, String> kafkaTemplate;
+
+  public MetricsServiceImpl(KafkaTemplate<String, String> kafkaTemplate) {
+    this.kafkaTemplate = kafkaTemplate;
   }
 
   @Async("processExecutor")
@@ -38,14 +44,29 @@ public class MetricsServiceImpl implements MetricsService {
       }
     }
 
-    var shortenUrl = httpRequest.getRequestURI().replaceAll("/api/v1/shorten/", "");
+    var shortenUrl =
+        httpRequest
+            .getRequestURI()
+            .replaceAll("/", "")
+            .replaceAll("api", "")
+            .replaceAll("v1", "")
+            .replaceAll("shorten", "")
+            .replaceAll("find", "")
+            .replaceAll("get", "");
 
-    // log.info("Body {}", new JSONParser(httpRequest.getReader()).parse());
-    log.info("shortenUrl {}", shortenUrl);
-    log.info("Ip {}", httpRequest.getRemoteAddr());
-    log.info("Host {}", httpRequest.getRemoteHost());
-    log.info("params {}", mapper.writeValueAsString(getParams(httpRequest)));
-    log.info("headers {}", mapper.writeValueAsString(getHeaders(httpRequest)));
+    var metricDto =
+        MetricsResponseDto.builder()
+            .shortenUrl(shortenUrl)
+            .uri(httpRequest.getRequestURI())
+            .ipAddress(httpRequest.getRemoteAddr())
+            .host(httpRequest.getRemoteHost())
+            .params(getParams(httpRequest))
+            .headers(getHeaders(httpRequest))
+            .invocationDate(new Date())
+            .build();
+    log.info("MetricsResponseDto {}", metricDto);
+
+    kafkaTemplate.send(topic, UUID.randomUUID().toString(), metricDto.toString());
   }
 
   private Map<String, String> getParams(HttpServletRequest request) {
